@@ -1,0 +1,133 @@
+@model List<CampusIdleGoods.Models.Product>
+@using CampusIdleGoods.Models
+@{
+    ViewData["Title"] = "我的商品";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold">我的商品</h3>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> 发布新商品
+    </a>
+</div>
+
+@if (Model == null || !Model.Any())
+{
+    <div class="card text-center py-5">
+        <div class="card-body">
+            <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
+            <h5 class="text-muted">您还没有发布任何商品</h5>
+            <p class="text-muted">发布您的第一个商品，让闲置物品找到新主人</p>
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> 立即发布
+            </a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var product in Model)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 fade-in">
+                    @if (product.Images != null && product.Images.Any())
+                    {
+                        <img src="@product.Images.First().ImagePath" class="card-img-top" alt="@product.Title" style="height: 200px; object-fit: cover;">
+                    }
+                    else
+                    {
+                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                            <i class="bi bi-image fs-1 text-muted"></i>
+                        </div>
+                    }
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">@product.Title</h5>
+                        <p class="card-text text-muted small flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                            @product.Description
+                        </p>
+                        <div class="mb-2">
+                            <span class="h5 text-primary fw-bold">¥@product.Price.ToString("F2")</span>
+                            @if (product.OriginalPrice.HasValue)
+                            {
+                                <span class="text-muted text-decoration-line-through ms-2">¥@product.OriginalPrice.Value.ToString("F2")</span>
+                            }
+                        </div>
+                        <div class="mb-2">
+                            @switch (product.Status)
+                            {
+                                case ProductStatus.Draft:
+                                    <span class="badge bg-secondary">草稿</span>
+                                    break;
+                                case ProductStatus.PendingReview:
+                                    <span class="badge bg-warning">待审核</span>
+                                    break;
+                                case ProductStatus.Published:
+                                    <span class="badge bg-success">已上架</span>
+                                    break;
+                                case ProductStatus.Sold:
+                                    <span class="badge bg-info">已售出</span>
+                                    break;
+                                case ProductStatus.Removed:
+                                    <span class="badge bg-dark">已下架</span>
+                                    break;
+                                case ProductStatus.Rejected:
+                                    <span class="badge bg-danger">审核拒绝</span>
+                                    break;
+                            }
+                            @if (product.IsNegotiable)
+                            {
+                                <span class="badge bg-primary ms-1">可议价</span>
+                            }
+                        </div>
+                        <div class="d-flex gap-2 mt-auto">
+                            <a asp-action="Details" asp-route-id="@product.Id" class="btn btn-sm btn-outline-primary flex-fill">
+                                <i class="bi bi-eye"></i> 查看
+                            </a>
+                            @if (product.Status == ProductStatus.Draft || product.Status == ProductStatus.PendingReview)
+                            {
+                                <a asp-action="Edit" asp-route-id="@product.Id" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i> 编辑
+                                </a>
+                            }
+                            @if (product.Status == ProductStatus.Published)
+                            {
+                                <form asp-action="Remove" asp-route-id="@product.Id" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-warning" onclick="return confirm('确定要下架此商品吗？')">
+                                        <i class="bi bi-arrow-down"></i> 下架
+                                    </button>
+                                </form>
+                            }
+                            @if (product.Status == ProductStatus.Removed)
+                            {
+                                <form asp-action="Republish" asp-route-id="@product.Id" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-arrow-up"></i> 上架
+                                    </button>
+                                </form>
+                            }
+                            @if (product.Status == ProductStatus.Published)
+                            {
+                                <form asp-action="MarkAsSold" asp-route-id="@product.Id" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-info" onclick="return confirm('确定标记为已售出吗？')">
+                                        <i class="bi bi-check-circle"></i> 已售
+                                    </button>
+                                </form>
+                            }
+                            <form asp-action="Delete" asp-route-id="@product.Id" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定要删除此商品吗？删除后无法恢复！')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                        <small class="text-muted mt-2">
+                            <i class="bi bi-eye"></i> @product.ViewCount 次浏览 | 
+                            <i class="bi bi-clock"></i> @product.CreatedAt.ToString("yyyy-MM-dd")
+                        </small>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+

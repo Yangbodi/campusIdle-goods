@@ -1,0 +1,316 @@
+@model CampusIdleGoods.Models.User
+@using CampusIdleGoods.Helpers
+@{
+    ViewData["Title"] = $"与 {Model.RealName} 的对话";
+    var currentUserId = SessionHelper.GetUserId(Context.Session);
+    var productId = ViewBag.ProductId as int?;
+}
+@Html.AntiForgeryToken()
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card fade-in">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    @if (!string.IsNullOrEmpty(Model.AvatarPath))
+                    {
+                        <img src="@Model.AvatarPath" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                    }
+                    else
+                    {
+                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
+                            <span class="text-white fw-bold">@Model.RealName[0]</span>
+                        </div>
+                    }
+                    <div>
+                        <h6 class="mb-0 text-dark">@Model.RealName</h6>
+                        <small class="text-primary" id="typingIndicator" style="display: none;">正在输入...</small>
+                        <small class="text-success" id="onlineStatus">在线</small>
+                    </div>
+                </div>
+                <div>
+                    <a asp-action="Index" class="btn btn-sm btn-outline-secondary text-dark">
+                        <i class="bi bi-arrow-left"></i> <span class="text-dark">返回</span>
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0" style="height: 500px; overflow-y: auto;" id="chatMessages">
+                <!-- 消息列表将在这里动态加载 -->
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-chat-dots fs-1"></i>
+                    <p class="mt-2">开始对话吧</p>
+                </div>
+            </div>
+            <div class="card-footer">
+                @if (productId.HasValue)
+                {
+                    var product = ViewBag.Product as CampusIdleGoods.Models.Product;
+                    <div class="alert alert-info mb-2 py-2" id="productInfo">
+                        <small class="d-flex align-items-center justify-content-between">
+                            <span>
+                                <i class="bi bi-box"></i> 关联商品：
+                                @if (product != null)
+                                {
+                                    <a asp-controller="Product" asp-action="Details" asp-route-id="@product.Id" class="text-primary fw-bold text-decoration-none" target="_blank">
+                                        @product.Title
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span id="productTitle">加载中...</span>
+                                }
+                            </span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="removeProductInfo()">移除</button>
+                        </small>
+                    </div>
+                }
+                <div class="input-group">
+                    <textarea class="form-control" id="messageInput" placeholder="输入消息..." maxlength="1000" rows="2" style="resize: none; overflow-y: auto;"></textarea>
+                    <button class="btn btn-primary" type="button" id="sendButton" style="align-self: flex-end;">
+                        <i class="bi bi-send"></i> 发送
+                    </button>
+                </div>
+                <small class="text-muted">按 Enter 发送，Shift+Enter 换行</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/messageHub", {
+                transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling
+            })
+            .withAutomaticReconnect()
+            .build();
+
+        const receiverId = @Model.Id;
+        const senderId = @(currentUserId ?? 0);
+        const productId = @(productId?.ToString() ?? "null");
+
+        // 连接建立
+        connection.start().then(function () {
+            console.log("SignalR连接已建立");
+            // 加入聊天室
+            if (receiverId && senderId) {
+                connection.invoke("JoinChat", receiverId).catch(function(err) {
+                    console.error("加入聊天室失败:", err.toString());
+                });
+            }
+            // 加载历史消息
+            loadHistoryMessages();
+        }).catch(function (err) {
+            console.error("SignalR连接失败:", err.toString());
+            alert("无法连接到服务器，请刷新页面重试");
+        });
+
+        // 接收消息
+        connection.on("ReceiveChatMessage", function (data) {
+            addMessageToChat(data.senderId, data.content, data.timestamp, data.senderId === senderId);
+        });
+
+        // 接收系统消息
+        connection.on("ReceiveMessage", function (data) {
+            if (data.senderId === receiverId || data.receiverId === receiverId) {
+                addMessageToChat(data.senderId, data.content, data.timestamp, data.senderId === senderId);
+            }
+        });
+
+        // 消息已读通知
+        connection.on("MessageRead", function (data) {
+            // 可以在这里更新消息的已读状态
+            console.log("消息已被阅读:", data);
+        });
+
+        // 用户正在输入
+        connection.on("UserTyping", function (data) {
+            if (data.userId === receiverId) {
+                const indicator = document.getElementById('typingIndicator');
+                if (data.isTyping) {
+                    indicator.style.display = 'block';
+                } else {
+                    indicator.style.display = 'none';
+                }
+            }
+        });
+
+        // 错误处理
+        connection.on("Error", function (error) {
+            alert(error);
+        });
+
+        // 发送消息
+        document.getElementById('sendButton').addEventListener('click', sendMessage);
+        
+        const messageInput = document.getElementById('messageInput');
+        
+        // 键盘事件处理：Enter发送，Shift+Enter换行
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+            // Shift+Enter会自动换行，不需要额外处理
+        });
+
+        // 输入提示和自动高度调整
+        let typingTimeout;
+        messageInput.addEventListener('input', function() {
+            // 自动调整高度
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+            
+            // 发送正在输入提示
+            connection.invoke("Typing", receiverId, true).catch(function(err) {
+                console.error("发送输入提示失败:", err.toString());
+            });
+
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(function() {
+                connection.invoke("Typing", receiverId, false).catch(function(err) {
+                    console.error("停止输入提示失败:", err.toString());
+                });
+            }, 1000);
+        });
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const content = input.value.trim();
+            
+            if (!content) {
+                return;
+            }
+
+            // 先通过SignalR发送实时消息
+            connection.invoke("SendChatMessage", receiverId, content, productId || null)
+                .then(() => {
+                    // 然后保存到数据库
+                    return fetch('@Url.Action("Send", "Message")', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: new URLSearchParams({
+                            receiverId: receiverId,
+                            content: content,
+                            productId: productId || '',
+                            __RequestVerificationToken: document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                        })
+                    });
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        input.value = '';
+                        // 重置输入框高度
+                        input.style.height = 'auto';
+                        // 商品信息会一直显示，不会移除
+                    } else {
+                        alert(data.message || '保存消息失败，但消息已发送');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('发送失败，请稍后重试');
+                });
+        }
+
+        function addMessageToChat(senderId, content, timestamp, isOwn) {
+            const messagesContainer = document.getElementById('chatMessages');
+            
+            // 移除空状态提示
+            const emptyState = messagesContainer.querySelector('.text-center');
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            // 检查是否已存在相同的消息（避免重复显示）
+            const existingMessages = messagesContainer.querySelectorAll('.message-item');
+            const messageTime = new Date(timestamp).getTime();
+            for (let msg of existingMessages) {
+                const msgTime = new Date(msg.dataset.timestamp).getTime();
+                if (Math.abs(msgTime - messageTime) < 1000 && msg.textContent.includes(content.substring(0, 20))) {
+                    return; // 消息已存在，不重复添加
+                }
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `d-flex mb-3 message-item ${isOwn ? 'justify-content-end' : 'justify-content-start'}`;
+            messageDiv.dataset.timestamp = timestamp;
+            
+            const messageBubble = document.createElement('div');
+            messageBubble.className = `p-3 rounded ${isOwn ? 'bg-primary text-white' : 'bg-light'}`;
+            messageBubble.style.maxWidth = '70%';
+            messageBubble.style.wordWrap = 'break-word';
+            
+            messageBubble.innerHTML = `
+                <div class="mb-1" style="white-space: pre-wrap;">${escapeHtml(content)}</div>
+                <small class="opacity-75">${formatTime(timestamp)}</small>
+            `;
+            
+            messageDiv.appendChild(messageBubble);
+            messagesContainer.appendChild(messageDiv);
+            
+            // 滚动到底部
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) { // 1分钟内
+                return '刚刚';
+            } else if (diff < 3600000) { // 1小时内
+                return `${Math.floor(diff / 60000)}分钟前`;
+            } else if (date.toDateString() === now.toDateString()) { // 今天
+                return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            } else {
+                return date.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+            }
+        }
+
+        function loadHistoryMessages() {
+            fetch('@Url.Action("GetChatHistory", "Message")?userId=' + receiverId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.messages) {
+                        const messagesContainer = document.getElementById('chatMessages');
+                        const emptyState = messagesContainer.querySelector('.text-center');
+                        if (emptyState) {
+                            emptyState.remove();
+                        }
+
+                        data.messages.forEach(msg => {
+                            addMessageToChat(msg.senderId, msg.content, msg.createdAt, msg.senderId === senderId);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('加载历史消息失败:', error);
+                });
+        }
+
+        function removeProductInfo() {
+            document.getElementById('productInfo').remove();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 页面卸载时离开聊天室
+        window.addEventListener('beforeunload', function() {
+            if (receiverId && senderId) {
+                connection.invoke("LeaveChat", receiverId).catch(function(err) {
+                    console.error("离开聊天室失败:", err.toString());
+                });
+            }
+        });
+    </script>
+}
+

@@ -1,0 +1,167 @@
+@using CampusIdleGoods.Models
+@{
+    ViewData["Title"] = "分类管理";
+    var categories = ViewBag.Categories as List<Category> ?? new List<Category>();
+    var rootCategories = ViewBag.RootCategories as List<Category> ?? new List<Category>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold">分类管理</h3>
+    <div>
+        <a asp-action="Dashboard" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> 返回仪表板
+        </a>
+        <a asp-action="AddCategory" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> 添加分类
+        </a>
+    </div>
+</div>
+
+@if (!categories.Any())
+{
+    <div class="card text-center py-5">
+        <div class="card-body">
+            <i class="bi bi-tags fs-1 text-muted mb-3"></i>
+            <h5 class="text-muted">暂无分类</h5>
+            <p class="text-muted">还没有创建任何分类</p>
+            <a asp-action="AddCategory" class="btn btn-primary">添加第一个分类</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card fade-in">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>分类名称</th>
+                            <th>父分类</th>
+                            <th>描述</th>
+                            <th>排序</th>
+                            <th>商品数</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var category in categories.OrderBy(c => c.SortOrder).ThenBy(c => c.Name))
+                        {
+                            <tr>
+                                <td>@category.Id</td>
+                                <td>
+                                    @if (category.ParentId.HasValue)
+                                    {
+                                        <span class="text-muted">└─ </span>
+                                    }
+                                    <strong>@category.Name</strong>
+                                </td>
+                                <td>@(category.Parent?.Name ?? "根分类")</td>
+                                <td>@(category.Description ?? "-")</td>
+                                <td>@category.SortOrder</td>
+                                <td>
+                                    <span class="badge bg-info">@category.Products.Count</span>
+                                </td>
+                                <td>
+                                    @if (category.IsEnabled)
+                                    {
+                                        <span class="badge bg-success">启用</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">禁用</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="EditCategory" asp-route-id="@category.Id" class="btn btn-outline-primary">
+                                            <i class="bi bi-pencil"></i> 编辑
+                                        </a>
+                                        <button type="button" class="btn btn-outline-warning toggle-category-status" data-category-id="@category.Id" data-enabled="@category.IsEnabled.ToString().ToLower()">
+                                            <i class="bi bi-@(category.IsEnabled ? "x-circle" : "check-circle")"></i> @(category.IsEnabled ? "禁用" : "启用")
+                                        </button>
+                                        @if (!category.Children.Any() && !category.Products.Any())
+                                        {
+                                            <button type="button" class="btn btn-outline-danger delete-category" data-category-id="@category.Id" data-category-name="@category.Name">
+                                                <i class="bi bi-trash"></i> 删除
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        // 切换分类启用状态
+        document.querySelectorAll('.toggle-category-status').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const categoryId = this.dataset.categoryId;
+                const isEnabled = this.dataset.enabled === 'true';
+                
+                fetch('@Url.Action("ToggleCategoryStatus", "Admin")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: 'id=' + categoryId
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('操作失败，请稍后重试');
+                });
+            });
+        });
+
+        // 删除分类
+        document.querySelectorAll('.delete-category').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const categoryId = this.dataset.categoryId;
+                const categoryName = this.dataset.categoryName;
+                
+                if (!confirm(`确定要删除分类"${categoryName}"吗？此操作不可恢复！`)) {
+                    return;
+                }
+
+                fetch('@Url.Action("DeleteCategory", "Admin")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: 'id=' + categoryId
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('操作失败，请稍后重试');
+                });
+            });
+        });
+    </script>
+}
+

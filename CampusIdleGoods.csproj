@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MailKit" Version="4.14.1" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="MimeKit" Version="4.14.0" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="wwwroot\lib\bootstrap\dist\css\fonts\bootstrap-icons.woff2">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="https://www.schemastore.org/appveyor.json" /></VisualStudio></ProjectExtensions>
+
+</Project>

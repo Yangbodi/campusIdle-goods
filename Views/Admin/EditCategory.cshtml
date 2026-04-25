@@ -1,0 +1,86 @@
+@model CampusIdleGoods.Models.ViewModels.AdminCategoryEditViewModel
+@{
+    ViewData["Title"] = Model.Id.HasValue ? "编辑分类" : "添加分类";
+    var categories = ViewBag.Categories as List<CampusIdleGoods.Models.Category> ?? new List<CampusIdleGoods.Models.Category>();
+    var parentId = ViewBag.ParentId as int?;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold">@(Model.Id.HasValue ? "编辑分类" : "添加分类")</h3>
+    <a asp-action="Categories" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> 返回列表
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card fade-in">
+            <div class="card-body">
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        @TempData["ErrorMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+
+                <form asp-action="SaveCategory" method="post">
+                    @Html.AntiForgeryToken()
+                    @if (Model.Id.HasValue)
+                    {
+                        <input type="hidden" asp-for="Id" />
+                    }
+
+                    <div class="mb-3">
+                        <label asp-for="Name" class="form-label"></label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label"></label>
+                        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="ParentId" class="form-label"></label>
+                        <select asp-for="ParentId" class="form-select">
+                            <option value="">根分类（无父分类）</option>
+                            @foreach (var cat in categories)
+                            {
+                                var isSelected = (parentId.HasValue && parentId.Value == cat.Id) || (Model.ParentId.HasValue && Model.ParentId.Value == cat.Id);
+                                <option value="@cat.Id" selected="@isSelected">@cat.Name</option>
+                            }
+                        </select>
+                        <span asp-validation-for="ParentId" class="text-danger"></span>
+                        <small class="form-text text-muted">选择父分类，留空表示根分类</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="SortOrder" class="form-label"></label>
+                        <input asp-for="SortOrder" class="form-control" type="number" min="0" />
+                        <span asp-validation-for="SortOrder" class="text-danger"></span>
+                        <small class="form-text text-muted">数字越小，排序越靠前</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input asp-for="IsEnabled" class="form-check-input" type="checkbox" />
+                            <label asp-for="IsEnabled" class="form-check-label"></label>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a asp-action="Categories" class="btn btn-outline-secondary">取消</a>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

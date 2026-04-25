@@ -1,0 +1,117 @@
+@model EditProfileViewModel
+@{
+    ViewData["Title"] = "编辑个人资料";
+}
+
+<div class="row g-4">
+    <div class="col-md-3">
+        <div class="profile-sidebar fade-in">
+            <div class="text-center mb-4">
+                 @if (!string.IsNullOrEmpty(Model.AvatarPath))
+                {
+                    <img src="@Model.AvatarPath" alt="头像" class="profile-avatar mb-3" />
+                }
+                else
+                {
+                    <div class="profile-avatar bg-gradient d-inline-flex align-items-center justify-content-center mb-3" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);">
+                        <span class="text-white fs-1 fw-bold">@Model.RealName[0]</span>
+                    </div>
+                }
+                <h5 class="fw-bold mb-1">编辑资料</h5>
+                <p class="text-muted small">更新您的个人信息</p>
+            </div>
+        </div>
+        <div class="card mt-3 profile-menu">
+            <div class="list-group list-group-flush">
+                <a asp-action="Profile" class="list-group-item list-group-item-action">
+                    <i class="bi bi-person"></i> 个人信息
+                </a>
+                <a asp-action="EditProfile" class="list-group-item list-group-item-action active">
+                    <i class="bi bi-pencil"></i> 编辑资料
+                </a>
+                <a asp-action="ChangePassword" class="list-group-item list-group-item-action">
+                    <i class="bi bi-key"></i> 修改密码
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-9">
+        <div class="card fade-in">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-pencil-square"></i> 编辑个人资料</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="EditProfile" method="post">
+                    <input type="hidden" asp-for="Id" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Email" class="form-label">
+                                <i class="bi bi-envelope"></i> 邮箱
+                            </label>
+                            <input asp-for="Email" class="form-control" type="email" placeholder="请输入邮箱" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="RealName" class="form-label">
+                                <i class="bi bi-person-badge"></i> 真实姓名
+                            </label>
+                            <input asp-for="RealName" class="form-control" placeholder="请输入真实姓名" />
+                            <span asp-validation-for="RealName" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Department" class="form-label">
+                            <i class="bi bi-building"></i> 院系专业
+                        </label>
+                        <input asp-for="Department" class="form-control" placeholder="请输入院系专业" />
+                        <span asp-validation-for="Department" class="text-danger"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="PhoneNumber" class="form-label">
+                                <i class="bi bi-phone"></i> 手机号
+                            </label>
+                            <input asp-for="PhoneNumber" class="form-control" type="tel" placeholder="请输入手机号" />
+                            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="WeChat" class="form-label">
+                                <i class="bi bi-wechat"></i> 微信
+                            </label>
+                            <input asp-for="WeChat" class="form-control" placeholder="请输入微信号" />
+                            <span asp-validation-for="WeChat" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="QQ" class="form-label">
+                                <i class="bi bi-qq"></i> QQ
+                            </label>
+                            <input asp-for="QQ" class="form-control" placeholder="请输入QQ号" />
+                            <span asp-validation-for="QQ" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-end mt-4">
+                        <a asp-action="Profile" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> 取消
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> 保存更改
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

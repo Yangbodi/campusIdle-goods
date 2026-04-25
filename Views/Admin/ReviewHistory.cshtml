@@ -1,0 +1,117 @@
+@{
+    ViewData["Title"] = "审核历史";
+    var products = ViewBag.Products as List<CampusIdleGoods.Models.Product> ?? new List<CampusIdleGoods.Models.Product>();
+    var currentPage = ViewBag.CurrentPage as int? ?? 1;
+    var totalPages = ViewBag.TotalPages as int? ?? 1;
+    var totalCount = ViewBag.TotalCount as int? ?? 0;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold">审核历史</h3>
+    <a asp-action="PendingReview" class="btn btn-primary">
+        <i class="bi bi-hourglass-split"></i> 待审核商品
+    </a>
+</div>
+
+@if (!products.Any())
+{
+    <div class="card text-center py-5">
+        <div class="card-body">
+            <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
+            <h5 class="text-muted">暂无审核历史</h5>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card fade-in">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>商品信息</th>
+                            <th>卖家</th>
+                            <th>分类</th>
+                            <th>价格</th>
+                            <th>审核结果</th>
+                            <th>审核人</th>
+                            <th>审核时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var product in products)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        @if (product.Images != null && product.Images.Any())
+                                        {
+                                            <img src="@product.Images.First().ImagePath" class="me-2" style="width: 50px; height: 50px; object-fit: cover; border-radius: 0.25rem;">
+                                        }
+                                        <div>
+                                            <strong>@product.Title</strong>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>@product.Seller.RealName</td>
+                                <td>@product.Category.Name</td>
+                                <td class="text-primary fw-bold">¥@product.Price.ToString("F2")</td>
+                                <td>
+                                    @if (product.Status == ProductStatus.Published)
+                                    {
+                                        <span class="badge bg-success">已通过</span>
+                                    }
+                                    else if (product.Status == ProductStatus.Rejected)
+                                    {
+                                        <span class="badge bg-danger">已拒绝</span>
+                                        @if (!string.IsNullOrEmpty(product.RejectReason))
+                                        {
+                                            <br><small class="text-muted">@product.RejectReason</small>
+                                        }
+                                    }
+                                </td>
+                                <td>@(product.Reviewer?.RealName ?? "系统")</td>
+                                <td>@(product.ReviewedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                                <td>
+                                    <a asp-controller="Product" asp-action="Details" asp-route-id="@product.Id" class="btn btn-sm btn-outline-primary" target="_blank">
+                                        <i class="bi bi-eye"></i> 查看
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 分页 -->
+            @if (totalPages > 1)
+            {
+                <nav aria-label="分页" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        @if (currentPage > 1)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" asp-action="ReviewHistory" asp-route-page="@(currentPage - 1)">上一页</a>
+                            </li>
+                        }
+                        @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+                        {
+                            <li class="page-item @(i == currentPage ? "active" : "")">
+                                <a class="page-link" asp-action="ReviewHistory" asp-route-page="@i">@i</a>
+                            </li>
+                        }
+                        @if (currentPage < totalPages)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" asp-action="ReviewHistory" asp-route-page="@(currentPage + 1)">下一页</a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            }
+        </div>
+    </div>
+}
+

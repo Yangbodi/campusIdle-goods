@@ -1,0 +1,247 @@
+﻿@model User
+@{
+    ViewData["Title"] = "个人中心";
+}
+
+<div class="row g-4">
+    <div class="col-md-3">
+        <div class="profile-sidebar fade-in">
+            <div class="text-center mb-4">
+                @if (!string.IsNullOrEmpty(Model.AvatarPath))
+                {
+                    <img src="@Model.AvatarPath" alt="头像" class="profile-avatar mb-3" />
+                }
+                else
+                {
+                    <div class="profile-avatar bg-gradient d-inline-flex align-items-center justify-content-center mb-3" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);">
+                        <span class="text-white fs-1 fw-bold">@Model.RealName[0]</span>
+                    </div>
+                }
+                <h5 class="fw-bold mb-1">@Model.RealName</h5>
+                <p class="text-muted small mb-3">@Model.Username</p>
+                <div class="mb-3">
+                    @if (Model.IsEmailVerified)
+                    {
+                        <span class="badge bg-info"><i class="bi bi-envelope-check"></i> 邮箱已验证</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning"><i class="bi bi-envelope-x"></i> 邮箱未验证</span>
+                    }
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#avatarModal">
+                    <i class="bi bi-camera"></i> 上传头像
+                </button>
+            </div>
+        </div>
+        <div class="card mt-3 profile-menu">
+            <div class="list-group list-group-flush">
+                <a asp-action="Profile" class="list-group-item list-group-item-action active">
+                    <i class="bi bi-person"></i> 个人信息
+                </a>
+                <a asp-action="EditProfile" class="list-group-item list-group-item-action">
+                    <i class="bi bi-pencil"></i> 编辑资料
+                </a>
+                <a asp-action="ChangePassword" class="list-group-item list-group-item-action">
+                    <i class="bi bi-key"></i> 修改密码
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-9">
+        @* 邮箱未验证提示 *@
+        @if (!Model.IsEmailVerified)
+        {
+            <div class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <strong>注意：</strong> 您的邮箱尚未验证，无法发布商品。
+                <button type="button" class="btn btn-sm btn-warning ms-2" id="resendVerificationBtn">
+                    <i class="bi bi-envelope"></i> 重新发送验证邮件
+                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <div class="card fade-in">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person-circle"></i> 个人信息</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">用户名</label>
+                            <div class="fw-bold">@Model.Username</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">邮箱</label>
+                            <div class="fw-bold">@Model.Email</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">真实姓名</label>
+                            <div class="fw-bold">@Model.RealName</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">学号</label>
+                            <div class="fw-bold">@Model.StudentId</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">院系专业</label>
+                            <div class="fw-bold">@(Model.Department ?? "未填写")</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">手机号</label>
+                            <div class="fw-bold">@(Model.PhoneNumber ?? "未填写")</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">微信</label>
+                            <div class="fw-bold">@(Model.WeChat ?? "未填写")</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">QQ</label>
+                            <div class="fw-bold">@(Model.QQ ?? "未填写")</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <hr>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">注册时间</label>
+                            <div class="fw-bold">@Model.CreatedAt.ToString("yyyy年MM月dd日 HH:mm")</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 上传头像模态框 -->
+<div class="modal fade" id="avatarModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">上传头像</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="avatarForm" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="avatarFile" class="form-label">选择图片</label>
+                        <input type="file" class="form-control" id="avatarFile" name="avatarFile" accept="image/*" required>
+                        <small class="form-text text-muted">支持 jpg、jpeg、png、gif 格式，大小不超过5MB</small>
+                    </div>
+                    <div id="avatarPreview" class="text-center"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">上传</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // 重新发送验证邮件
+        var resendBtn = document.getElementById('resendVerificationBtn');
+        if (resendBtn) {
+            resendBtn.addEventListener('click', function() {
+                if (confirm('确定要重新发送验证邮件吗？')) {
+                    this.disabled = true;
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>发送中...';
+
+                    var formData = new FormData();
+                    var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                    if (token) {
+                        formData.append('__RequestVerificationToken', token);
+                    }
+
+                    fetch('@Url.Action("ResendVerificationEmail", "Account")', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            resendBtn.innerHTML = '<i class="bi bi-check-circle"></i> 已发送';
+                        } else {
+                            alert(data.message);
+                            resendBtn.disabled = false;
+                            resendBtn.innerHTML = '<i class="bi bi-envelope"></i> 重新发送验证邮件';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('发送失败，请稍后重试');
+                        resendBtn.disabled = false;
+                        resendBtn.innerHTML = '<i class="bi bi-envelope"></i> 重新发送验证邮件';
+                    });
+                }
+            });
+        }
+
+        // 头像预览
+        document.getElementById('avatarFile').addEventListener('change', function(e) {
+            var file = e.target.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var preview = document.getElementById('avatarPreview');
+                    preview.innerHTML = '<img src="' + e.target.result + '" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 上传头像
+        document.getElementById('avatarForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var formData = new FormData();
+            var fileInput = document.getElementById('avatarFile');
+            if (fileInput.files.length > 0) {
+                formData.append('avatarFile', fileInput.files[0]);
+            }
+
+            // 获取防伪令牌
+            var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            if (token) {
+                formData.append('__RequestVerificationToken', token);
+            }
+
+            fetch('@Url.Action("UploadAvatar", "Account")', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('上传失败，请稍后重试');
+            });
+        });
+    </script>
+}
+

@@ -1,0 +1,142 @@
+@model RegisterViewModel
+@{
+    ViewData["Title"] = "用户注册";
+}
+
+<div class="auth-container">
+    <div class="auth-card fade-in" style="max-width: 600px;">
+        <div class="text-center mb-4">
+            <h2 class="fw-bold text-gradient mb-2">创建账号</h2>
+            <p class="text-muted">加入我们，开启您的闲置物品交易之旅</p>
+        </div>
+        
+        <form asp-action="Register" method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Username" class="form-label">
+                        <i class="bi bi-person"></i> 用户名
+                    </label>
+                    <input asp-for="Username" class="form-control" placeholder="请输入用户名" />
+                    <span asp-validation-for="Username" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Email" class="form-label">
+                        <i class="bi bi-envelope"></i> 邮箱
+                    </label>
+                    <input asp-for="Email" class="form-control" type="email" placeholder="请输入邮箱" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Password" class="form-label">
+                        <i class="bi bi-lock"></i> 密码
+                    </label>
+                    <input asp-for="Password" class="form-control" placeholder="请输入密码" />
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label asp-for="ConfirmPassword" class="form-label">
+                        <i class="bi bi-lock-fill"></i> 确认密码
+                    </label>
+                    <input asp-for="ConfirmPassword" class="form-control" placeholder="请再次输入密码" />
+                    <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                </div>
+            </div>
+
+            <hr class="my-4">
+
+            <h6 class="fw-bold mb-3">实名信息</h6>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="RealName" class="form-label">
+                        <i class="bi bi-person-badge"></i> 真实姓名
+                    </label>
+                    <input asp-for="RealName" class="form-control" placeholder="请输入真实姓名" />
+                    <span asp-validation-for="RealName" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label asp-for="StudentId" class="form-label">
+                        <i class="bi bi-card-text"></i> 学号 <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="StudentId" class="form-control" id="studentId" placeholder="请输入学号" />
+                    <span asp-validation-for="StudentId" class="text-danger"></span>
+                    <small class="form-text text-muted">6-20位数字</small>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Department" class="form-label">
+                    <i class="bi bi-building"></i> 院系专业
+                </label>
+                <input asp-for="Department" class="form-control" placeholder="请输入院系专业（可选）" />
+                <span asp-validation-for="Department" class="text-danger"></span>
+            </div>
+
+            <hr class="my-4">
+
+            <h6 class="fw-bold mb-3">联系方式（可选）</h6>
+            
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label asp-for="PhoneNumber" class="form-label">
+                        <i class="bi bi-phone"></i> 手机号
+                    </label>
+                    <input asp-for="PhoneNumber" class="form-control" type="tel" placeholder="请输入手机号" />
+                    <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label asp-for="WeChat" class="form-label">
+                        <i class="bi bi-wechat"></i> 微信
+                    </label>
+                    <input asp-for="WeChat" class="form-control" placeholder="请输入微信号" />
+                    <span asp-validation-for="WeChat" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label asp-for="QQ" class="form-label">
+                        <i class="bi bi-qq"></i> QQ
+                    </label>
+                    <input asp-for="QQ" class="form-control" placeholder="请输入QQ号" />
+                    <span asp-validation-for="QQ" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="d-grid mb-3">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-person-plus"></i> 立即注册
+                </button>
+            </div>
+
+            <div class="text-center">
+                <p class="text-muted">
+                    已有账号？ <a asp-action="Login" class="text-decoration-none fw-bold">立即登录</a>
+                </p>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        // 学号格式验证（前端）
+        document.getElementById('studentId').addEventListener('input', function(e) {
+            var value = e.target.value;
+            var pattern = /^\d{6,20}$/;
+            if (value && !pattern.test(value)) {
+                e.target.setCustomValidity('学号格式不正确，请输入6-20位数字');
+            } else {
+                e.target.setCustomValidity('');
+            }
+        });
+    </script>
+}

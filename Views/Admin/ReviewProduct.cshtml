@@ -1,0 +1,207 @@
+@model CampusIdleGoods.Models.Product
+@using CampusIdleGoods.Models
+@{
+    ViewData["Title"] = "审核商品";
+    var imagesList = Model.Images?.OrderBy(i => i.SortOrder).ToList() ?? new List<ProductImage>();
+}
+
+<div class="row g-4">
+    <div class="col-md-8">
+        <div class="card fade-in">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> 商品信息</h5>
+            </div>
+            <div class="card-body">
+                <!-- 商品图片 -->
+                @if (imagesList.Any())
+                {
+                    <div id="productCarousel" class="carousel slide mb-4" data-bs-ride="carousel" data-bs-interval="3000">
+                        <div class="carousel-inner">
+                            @for (int i = 0; i < imagesList.Count; i++)
+                            {
+                                <div class="carousel-item @(i == 0 ? "active" : "")">
+                                    <img src="@imagesList[i].ImagePath" class="d-block w-100" alt="商品图片 @(i+1)" style="max-height: 400px; object-fit: contain; background-color: #f8f9fa;">
+                                </div>
+                            }
+                        </div>
+                        @if (imagesList.Count > 1)
+                        {
+                            <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev" style="background-color: rgba(0, 0, 0, 0.5); width: 50px; height: 50px; border-radius: 50%; top: 50%; transform: translateY(-50%); left: 15px;">
+                                <span class="carousel-control-prev-icon" aria-hidden="true" style="filter: brightness(0) invert(1);"></span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next" style="background-color: rgba(0, 0, 0, 0.5); width: 50px; height: 50px; border-radius: 50%; top: 50%; transform: translateY(-50%); right: 15px;">
+                                <span class="carousel-control-next-icon" aria-hidden="true" style="filter: brightness(0) invert(1);"></span>
+                            </button>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="bg-light d-flex align-items-center justify-content-center mb-4" style="height: 300px;">
+                        <i class="bi bi-image fs-1 text-muted"></i>
+                    </div>
+                }
+
+                <h3 class="fw-bold mb-3">@Model.Title</h3>
+                
+                <div class="mb-3">
+                    <span class="h4 text-primary fw-bold">¥@Model.Price.ToString("F2")</span>
+                    @if (Model.OriginalPrice.HasValue)
+                    {
+                        <span class="text-muted text-decoration-line-through ms-2">¥@Model.OriginalPrice.Value.ToString("F2")</span>
+                    }
+                </div>
+
+                <hr>
+
+                <div class="mb-3">
+                    <h5 class="fw-bold">商品描述</h5>
+                    <p class="text-muted" style="white-space: pre-wrap;">@Model.Description</p>
+                </div>
+
+                @if (Model.Tags != null && Model.Tags.Any())
+                {
+                    <div class="mb-3">
+                        <h5 class="fw-bold">商品标签</h5>
+                        <div>
+                            @foreach (var tag in Model.Tags)
+                            {
+                                <span class="badge bg-light text-dark me-1">@tag.TagName</span>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <h5 class="fw-bold">商品信息</h5>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-3">分类：</dt>
+                        <dd class="col-sm-9">@Model.Category.Name</dd>
+                        @if (!string.IsNullOrEmpty(Model.PickupLocation))
+                        {
+                            <dt class="col-sm-3">自提地点：</dt>
+                            <dd class="col-sm-9">@Model.PickupLocation</dd>
+                        }
+                        <dt class="col-sm-3">是否可议价：</dt>
+                        <dd class="col-sm-9">@(Model.IsNegotiable ? "是" : "否")</dd>
+                        <dt class="col-sm-3">发布时间：</dt>
+                        <dd class="col-sm-9">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- 卖家信息 -->
+        <div class="card mb-3 fade-in">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person"></i> 卖家信息</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    @if (!string.IsNullOrEmpty(Model.Seller.AvatarPath))
+                    {
+                        <img src="@Model.Seller.AvatarPath" class="rounded-circle me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                    }
+                    else
+                    {
+                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                            <span class="text-white fw-bold fs-5">@Model.Seller.RealName[0]</span>
+                        </div>
+                    }
+                    <div>
+                        <h6 class="mb-0">@Model.Seller.RealName</h6>
+                        <small class="text-muted">@Model.Seller.Username</small>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    @if (Model.Seller.IsVerified)
+                    {
+                        <span class="badge bg-success"><i class="bi bi-check-circle"></i> 已认证</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning"><i class="bi bi-exclamation-circle"></i> 未认证</span>
+                    }
+                </div>
+                <div>
+                    <small class="text-muted">
+                        <i class="bi bi-envelope"></i> @Model.Seller.Email<br>
+                        <i class="bi bi-card-text"></i> 学号：@Model.Seller.StudentId
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- 审核操作 -->
+        <div class="card fade-in">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0 text-white"><i class="bi bi-clipboard-check"></i> 审核操作</h5>
+            </div>
+            <div class="card-body">
+                <!-- 审核检查项 -->
+                <div class="mb-3">
+                    <h6 class="fw-bold">审核检查项</h6>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="checkTitle" checked>
+                        <label class="form-check-label" for="checkTitle">标题完整</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="checkDescription" checked>
+                        <label class="form-check-label" for="checkDescription">描述详细</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="checkPrice" checked>
+                        <label class="form-check-label" for="checkPrice">价格合理</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="checkImages" @(imagesList.Any() ? "checked" : "")>
+                        <label class="form-check-label" for="checkImages">有商品图片</label>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- 审核通过 -->
+                <form asp-action="ApproveProduct" asp-route-id="@Model.Id" method="post" class="mb-3">
+                    <button type="submit" class="btn btn-success w-100" onclick="return confirm('确定要审核通过此商品吗？')">
+                        <i class="bi bi-check-circle"></i> 审核通过
+                    </button>
+                </form>
+
+                <!-- 审核拒绝 -->
+                <form asp-action="RejectProduct" asp-route-id="@Model.Id" method="post" id="rejectForm">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">拒绝原因 <span class="text-danger">*</span></label>
+                        <textarea name="rejectReason" class="form-control" rows="3" placeholder="请填写拒绝原因..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-danger w-100" onclick="return confirm('确定要拒绝此商品吗？')">
+                        <i class="bi bi-x-circle"></i> 审核拒绝
+                    </button>
+                </form>
+
+                <div class="mt-3">
+                    <a asp-action="PendingReview" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-arrow-left"></i> 返回列表
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // 表单验证
+        document.getElementById('rejectForm')?.addEventListener('submit', function(e) {
+            const reason = this.querySelector('textarea[name="rejectReason"]').value.trim();
+            if (!reason) {
+                e.preventDefault();
+                alert('请填写拒绝原因');
+                return false;
+            }
+        });
+    </script>
+}
+

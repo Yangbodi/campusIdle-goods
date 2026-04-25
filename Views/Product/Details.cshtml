@@ -1,0 +1,318 @@
+@model CampusIdleGoods.Models.Product
+@using CampusIdleGoods.Helpers
+@using CampusIdleGoods.Models
+@{
+    ViewData["Title"] = Model.Title;
+    var isOwner = SessionHelper.GetUserId(Context.Session) == Model.SellerId;
+    var isFavorited = ViewBag.IsFavorited as bool? ?? false;
+}
+
+<div class="row g-4">
+    <div class="col-md-8">
+        <div class="card fade-in">
+            <div class="card-body">
+                <!-- 图片轮播 -->
+                @if (Model.Images != null && Model.Images.Any())
+                {
+                    var imagesList = Model.Images.OrderBy(i => i.SortOrder).ToList();
+                    <div id="productCarousel" class="carousel slide mb-4" data-bs-ride="carousel" data-bs-interval="3000">
+                        <!-- 轮播指示器 -->
+                        @if (imagesList.Count > 1)
+                        {
+                            <div class="carousel-indicators">
+                                @for (int i = 0; i < imagesList.Count; i++)
+                                {
+                                    <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="@i" class="@(i == 0 ? "active" : "")" aria-current="@(i == 0 ? "true" : "false")" aria-label="图片 @(i+1)"></button>
+                                }
+                            </div>
+                        }
+                        <div class="carousel-inner">
+                            @for (int i = 0; i < imagesList.Count; i++)
+                            {
+                                <div class="carousel-item @(i == 0 ? "active" : "")">
+                                    <img src="@imagesList[i].ImagePath" class="d-block w-100" alt="商品图片 @(i+1)" style="max-height: 500px; object-fit: contain; background-color: #f8f9fa;">
+                                </div>
+                            }
+                        </div>
+                        @if (imagesList.Count > 1)
+                        {
+                            <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev" style="background-color: rgba(0, 0, 0, 0.5); width: 50px; height: 50px; border-radius: 50%; top: 50%; transform: translateY(-50%); left: 15px;">
+                                <span class="carousel-control-prev-icon" aria-hidden="true" style="filter: brightness(0) invert(1);"></span>
+                                <span class="visually-hidden">Previous</span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next" style="background-color: rgba(0, 0, 0, 0.5); width: 50px; height: 50px; border-radius: 50%; top: 50%; transform: translateY(-50%); right: 15px;">
+                                <span class="carousel-control-next-icon" aria-hidden="true" style="filter: brightness(0) invert(1);"></span>
+                                <span class="visually-hidden">Next</span>
+                            </button>
+                        }
+                    </div>
+                    
+                    <!-- 图片缩略图 -->
+                    @if (imagesList.Count > 1)
+                    {
+                        <div class="d-flex gap-2 flex-wrap mt-2">
+                            @for (int i = 0; i < imagesList.Count; i++)
+                            {
+                                <img src="@imagesList[i].ImagePath" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" 
+                                     onclick="goToSlide(@i)" alt="缩略图 @(i+1)">
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="bg-light d-flex align-items-center justify-content-center mb-4" style="height: 400px;">
+                        <i class="bi bi-image fs-1 text-muted"></i>
+                    </div>
+                }
+
+                <!-- 商品信息 -->
+                <h2 class="fw-bold mb-3">@Model.Title</h2>
+                
+                <div class="mb-3">
+                    <span class="h3 text-primary fw-bold">¥@Model.Price.ToString("F2")</span>
+                    @if (Model.OriginalPrice.HasValue)
+                    {
+                        <span class="text-muted text-decoration-line-through ms-2">¥@Model.OriginalPrice.Value.ToString("F2")</span>
+                    }
+                </div>
+
+                <div class="mb-3">
+                    @switch (Model.Status)
+                    {
+                        case ProductStatus.Draft:
+                            <span class="badge bg-secondary">草稿</span>
+                            break;
+                        case ProductStatus.PendingReview:
+                            <span class="badge bg-warning">待审核</span>
+                            break;
+                        case ProductStatus.Published:
+                            <span class="badge bg-success">已上架</span>
+                            break;
+                        case ProductStatus.Sold:
+                            <span class="badge bg-info">已售出</span>
+                            break;
+                        case ProductStatus.Removed:
+                            <span class="badge bg-dark">已下架</span>
+                            break;
+                        case ProductStatus.Rejected:
+                            <span class="badge bg-danger">审核拒绝</span>
+                            if (!string.IsNullOrEmpty(Model.RejectReason))
+                            {
+                                <span class="text-danger ms-2">拒绝原因：@Model.RejectReason</span>
+                            }
+                            break;
+                    }
+                    @if (Model.IsNegotiable)
+                    {
+                        <span class="badge bg-primary ms-1">可议价</span>
+                    }
+                </div>
+
+                <hr>
+
+                <div class="mb-3">
+                    <h5 class="fw-bold">商品描述</h5>
+                    <p class="text-muted" style="white-space: pre-wrap;">@Model.Description</p>
+                </div>
+
+                @if (Model.Tags != null && Model.Tags.Any())
+                {
+                    <div class="mb-3">
+                        <h5 class="fw-bold">商品标签</h5>
+                        <div>
+                            @foreach (var tag in Model.Tags)
+                            {
+                                <span class="badge bg-light text-dark me-1">@tag.TagName</span>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <h5 class="fw-bold">商品信息</h5>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-3">分类：</dt>
+                        <dd class="col-sm-9">@Model.Category.Name</dd>
+                        @if (!string.IsNullOrEmpty(Model.PickupLocation))
+                        {
+                            <dt class="col-sm-3">自提地点：</dt>
+                            <dd class="col-sm-9">@Model.PickupLocation</dd>
+                        }
+                        <dt class="col-sm-3">发布时间：</dt>
+                        <dd class="col-sm-9">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm")</dd>
+                        <dt class="col-sm-3">浏览次数：</dt>
+                        <dd class="col-sm-9">@Model.ViewCount 次</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- 卖家信息卡片 -->
+        <div class="card mb-3 fade-in">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person"></i> 卖家信息</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    @if (!string.IsNullOrEmpty(Model.Seller.AvatarPath))
+                    {
+                        <img src="@Model.Seller.AvatarPath" class="rounded-circle me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                    }
+                    else
+                    {
+                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                            <span class="text-white fw-bold fs-5">@Model.Seller.RealName[0]</span>
+                        </div>
+                    }
+                    <div>
+                        <h6 class="mb-0">@Model.Seller.RealName</h6>
+                        <small class="text-muted">@Model.Seller.Username</small>
+                    </div>
+                </div>
+                @if (Model.Seller.IsVerified)
+                {
+                    <span class="badge bg-success mb-2"><i class="bi bi-check-circle"></i> 已认证</span>
+                }
+                <div class="mt-3">
+                    @if (isOwner)
+                    {
+                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary w-100 mb-2">
+                            <i class="bi bi-pencil"></i> 编辑商品
+                        </a>
+                    }
+                    else
+                    {
+                        @if (SessionHelper.IsLoggedIn(Context.Session))
+                        {
+                            <a asp-controller="Message" asp-action="Chat" asp-route-userId="@Model.SellerId" asp-route-productId="@Model.Id" class="btn btn-primary w-100 mb-2">
+                                <i class="bi bi-chat-dots"></i> 联系卖家
+                            </a>
+                            <button type="button" class="btn @(isFavorited ? "btn-danger" : "btn-outline-danger") w-100" id="favoriteBtn" data-product-id="@Model.Id">
+                                <i class="bi bi-heart@(isFavorited ? "-fill" : "")"></i> <span id="favoriteText">@(isFavorited ? "已收藏" : "收藏")</span>
+                            </button>
+                        }
+                        else
+                        {
+                            <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path" class="btn btn-primary w-100 mb-2">
+                                <i class="bi bi-chat-dots"></i> 联系卖家
+                            </a>
+                            <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path" class="btn btn-outline-danger w-100">
+                                <i class="bi bi-heart"></i> 收藏
+                            </a>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作按钮（仅对商品所有者显示） -->
+        @if (isOwner)
+        {
+            <div class="card fade-in">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-gear"></i> 商品管理</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Status == ProductStatus.Published)
+                    {
+                        <form asp-action="Remove" asp-route-id="@Model.Id" method="post" class="mb-2">
+                            <button type="submit" class="btn btn-warning w-100" onclick="return confirm('确定要下架此商品吗？')">
+                                <i class="bi bi-arrow-down"></i> 下架商品
+                            </button>
+                        </form>
+                        <form asp-action="MarkAsSold" asp-route-id="@Model.Id" method="post" class="mb-2">
+                            <button type="submit" class="btn btn-info w-100" onclick="return confirm('确定标记为已售出吗？')">
+                                <i class="bi bi-check-circle"></i> 标记已售出
+                            </button>
+                        </form>
+                    }
+                    @if (Model.Status == ProductStatus.Removed)
+                    {
+                        <form asp-action="Republish" asp-route-id="@Model.Id" method="post" class="mb-2">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-arrow-up"></i> 重新上架
+                            </button>
+                        </form>
+                    }
+                    <form asp-action="Delete" asp-route-id="@Model.Id" method="post">
+                        <button type="submit" class="btn btn-danger w-100" onclick="return confirm('确定要删除此商品吗？删除后无法恢复！')">
+                            <i class="bi bi-trash"></i> 删除商品
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // 跳转到指定幻灯片
+        function goToSlide(index) {
+            const carousel = bootstrap.Carousel.getInstance(document.getElementById('productCarousel'));
+            if (carousel) {
+                carousel.to(index);
+            }
+        }
+
+        // 确保轮播组件正确初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            const carouselElement = document.getElementById('productCarousel');
+            if (carouselElement) {
+                // 如果轮播组件还没有初始化，则初始化它
+                if (!bootstrap.Carousel.getInstance(carouselElement)) {
+                    new bootstrap.Carousel(carouselElement, {
+                        interval: 3000, // 3秒自动切换
+                        wrap: true, // 循环播放
+                        pause: 'hover' // 鼠标悬停时暂停
+                    });
+                }
+            }
+        });
+
+        // 收藏功能
+        document.getElementById('favoriteBtn')?.addEventListener('click', function() {
+            const productId = parseInt(this.dataset.productId);
+            const btn = this;
+            const icon = btn.querySelector('i');
+            const text = document.getElementById('favoriteText');
+            
+            fetch('@Url.Action("Toggle", "Favorite")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: 'productId=' + productId
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.isFavorite) {
+                        btn.classList.remove('btn-outline-danger');
+                        btn.classList.add('btn-danger');
+                        icon.classList.remove('bi-heart');
+                        icon.classList.add('bi-heart-fill');
+                        text.textContent = '已收藏';
+                    } else {
+                        btn.classList.remove('btn-danger');
+                        btn.classList.add('btn-outline-danger');
+                        icon.classList.remove('bi-heart-fill');
+                        icon.classList.add('bi-heart');
+                        text.textContent = '收藏';
+                    }
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('操作失败，请稍后重试');
+            });
+        });
+    </script>
+}
+

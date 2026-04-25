@@ -1,0 +1,307 @@
+@model EditProductViewModel
+@{
+    ViewData["Title"] = "编辑商品";
+    var productImages = ViewBag.ProductImages as List<CampusIdleGoods.Models.ProductImage> ?? new List<CampusIdleGoods.Models.ProductImage>();
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card fade-in">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="bi bi-pencil-square"></i> 编辑商品</h4>
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post" enctype="multipart/form-data" id="productForm">
+                    <input type="hidden" asp-for="Id" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label asp-for="Title" class="form-label">
+                                    <i class="bi bi-tag"></i> 商品标题 <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Title" class="form-control" placeholder="请输入商品标题" />
+                                <span asp-validation-for="Title" class="text-danger"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Description" class="form-label">
+                                    <i class="bi bi-file-text"></i> 商品描述 <span class="text-danger">*</span>
+                                </label>
+                                <textarea asp-for="Description" class="form-control" rows="6" placeholder="请详细描述您的商品..."></textarea>
+                                <span asp-validation-for="Description" class="text-danger"></span>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Price" class="form-label">
+                                        <i class="bi bi-currency-yen"></i> 价格 <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">¥</span>
+                                        <input asp-for="Price" class="form-control" type="number" step="0.01" min="0.01" placeholder="0.00" />
+                                    </div>
+                                    <span asp-validation-for="Price" class="text-danger"></span>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="OriginalPrice" class="form-label">
+                                        <i class="bi bi-currency-yen"></i> 原价（可选）
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">¥</span>
+                                        <input asp-for="OriginalPrice" class="form-control" type="number" step="0.01" min="0.01" placeholder="0.00" />
+                                    </div>
+                                    <span asp-validation-for="OriginalPrice" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="CategoryId" class="form-label">
+                                    <i class="bi bi-grid"></i> 商品分类 <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="CategoryId" class="form-select" id="categorySelect">
+                                    <option value="">请选择分类</option>
+                                    @if (ViewBag.Categories != null)
+                                    {
+                                        @foreach (var category in ViewBag.Categories as List<CampusIdleGoods.Models.Category>)
+                                        {
+                                            <option value="@category.Id" selected="@(category.Id == Model.CategoryId)">@category.Name</option>
+                                        }
+                                    }
+                                </select>
+                                <span asp-validation-for="CategoryId" class="text-danger"></span>
+                                <div id="subCategoryContainer" class="mt-2" style="display: none;">
+                                    <select class="form-select" id="subCategorySelect" name="SubCategoryId">
+                                        <option value="">请选择子分类</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="PickupLocation" class="form-label">
+                                    <i class="bi bi-geo-alt"></i> 自提地点
+                                </label>
+                                <input asp-for="PickupLocation" class="form-control" placeholder="例如：宿舍楼下、教学楼门口等" />
+                                <span asp-validation-for="PickupLocation" class="text-danger"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input asp-for="IsNegotiable" class="form-check-input" type="checkbox" />
+                                    <label asp-for="IsNegotiable" class="form-check-label">
+                                        价格可议价
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Tags" class="form-label">
+                                    <i class="bi bi-tags"></i> 商品标签
+                                </label>
+                                <input asp-for="Tags" class="form-control" placeholder="例如：九成新,急出,包邮（用逗号分隔）" />
+                                <small class="form-text text-muted">最多10个标签，用逗号分隔</small>
+                                <span asp-validation-for="Tags" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="bi bi-image"></i> 商品图片
+                                </label>
+                                
+                                <!-- 已有图片 -->
+                                @if (productImages.Any())
+                                {
+                                    <div id="existingImages" class="mb-3">
+                                        @foreach (var image in productImages)
+                                        {
+                                            <div class="position-relative d-inline-block me-2 mb-2" data-image-id="@image.Id">
+                                                <img src="@image.ImagePath" class="img-thumbnail" style="width: 100px; height: 100px; object-fit: cover;">
+                                                <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0" style="transform: translate(50%, -50%);" onclick="deleteImage(@image.Id)">
+                                                    <i class="bi bi-x"></i>
+                                                </button>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+
+                                <!-- 上传新图片 -->
+                                <div class="border rounded p-3 text-center" id="imageUploadArea" style="min-height: 150px; background-color: #f8f9fa;">
+                                    <input type="file" name="newImages" id="imageInput" multiple accept="image/*" style="display: none;" />
+                                    <div id="imagePreview" class="d-flex flex-wrap gap-2 mb-2"></div>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('imageInput').click()">
+                                        <i class="bi bi-cloud-upload"></i> 添加图片
+                                    </button>
+                                    <p class="text-muted small mt-2 mb-0">最多5张，每张不超过5MB</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-end mt-4">
+                        <a asp-action="MyProducts" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> 取消
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> 保存更改
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        // 图片上传预览（与Create页面类似）
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const imageUploadArea = document.getElementById('imageUploadArea');
+        let selectedImages = [];
+        let existingImageCount = @productImages.Count;
+
+        imageInput.addEventListener('change', function(e) {
+            handleFiles(e.target.files);
+        });
+
+        imageUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            imageUploadArea.style.backgroundColor = '#e9ecef';
+        });
+
+        imageUploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            imageUploadArea.style.backgroundColor = '#f8f9fa';
+        });
+
+        imageUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            imageUploadArea.style.backgroundColor = '#f8f9fa';
+            handleFiles(e.dataTransfer.files);
+        });
+
+        function handleFiles(files) {
+            const maxImages = 5;
+            const maxSize = 5 * 1024 * 1024;
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            const currentTotal = existingImageCount + selectedImages.length;
+
+            for (let i = 0; i < files.length && currentTotal + i < maxImages; i++) {
+                const file = files[i];
+                
+                if (!allowedTypes.includes(file.type)) {
+                    alert('只支持 jpg、jpeg、png、gif 格式的图片');
+                    continue;
+                }
+
+                if (file.size > maxSize) {
+                    alert('图片大小不能超过5MB');
+                    continue;
+                }
+
+                selectedImages.push(file);
+                previewImage(file);
+            }
+        }
+
+        function previewImage(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const div = document.createElement('div');
+                div.className = 'position-relative';
+                div.style.width = '100px';
+                div.style.height = '100px';
+                
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.className = 'img-thumbnail';
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'btn btn-danger btn-sm position-absolute top-0 end-0';
+                removeBtn.style.transform = 'translate(50%, -50%)';
+                removeBtn.innerHTML = '<i class="bi bi-x"></i>';
+                removeBtn.onclick = function() {
+                    const index = selectedImages.indexOf(file);
+                    if (index > -1) {
+                        selectedImages.splice(index, 1);
+                    }
+                    div.remove();
+                };
+
+                div.appendChild(img);
+                div.appendChild(removeBtn);
+                imagePreview.appendChild(div);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 删除已有图片
+        function deleteImage(imageId) {
+            if (confirm('确定要删除这张图片吗？')) {
+                fetch(`/Product/DeleteImage?imageId=${imageId}`, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.querySelector(`[data-image-id="${imageId}"]`)?.remove();
+                        existingImageCount--;
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('删除失败，请稍后重试');
+                });
+            }
+        }
+
+        // 分类选择（与Create页面相同）
+        document.getElementById('categorySelect').addEventListener('change', function() {
+            const parentId = this.value;
+            const subCategoryContainer = document.getElementById('subCategoryContainer');
+            const subCategorySelect = document.getElementById('subCategorySelect');
+
+            if (parentId) {
+                fetch(`/Product/GetSubCategories?parentId=${parentId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        subCategorySelect.innerHTML = '<option value="">请选择子分类</option>';
+                        if (data.length > 0) {
+                            data.forEach(item => {
+                                const option = document.createElement('option');
+                                option.value = item.id;
+                                option.textContent = item.name;
+                                subCategorySelect.appendChild(option);
+                            });
+                            subCategoryContainer.style.display = 'block';
+                        } else {
+                            subCategoryContainer.style.display = 'none';
+                        }
+                    });
+            } else {
+                subCategoryContainer.style.display = 'none';
+            }
+        });
+
+        document.getElementById('subCategorySelect').addEventListener('change', function() {
+            if (this.value) {
+                document.getElementById('categorySelect').value = this.value;
+            }
+        });
+    </script>
+}
+

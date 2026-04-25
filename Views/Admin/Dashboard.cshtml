@@ -1,0 +1,160 @@
+@{
+    ViewData["Title"] = "管理员仪表板";
+    var stats = ViewBag.Stats as dynamic;
+    var pendingProducts = ViewBag.PendingProducts as List<CampusIdleGoods.Models.Product> ?? new List<CampusIdleGoods.Models.Product>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold">管理员仪表板</h3>
+</div>
+
+<!-- 统计卡片 -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card text-center fade-in">
+            <div class="card-body">
+                <div class="fs-1 mb-2">👥</div>
+                <h4 class="fw-bold">@stats.TotalUsers</h4>
+                <p class="text-muted mb-0">总用户数</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center fade-in">
+            <div class="card-body">
+                <div class="fs-1 mb-2">📦</div>
+                <h4 class="fw-bold">@stats.TotalProducts</h4>
+                <p class="text-muted mb-0">总商品数</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center fade-in">
+            <div class="card-body">
+                <div class="fs-1 mb-2">✅</div>
+                <h4 class="fw-bold">@stats.PublishedProducts</h4>
+                <p class="text-muted mb-0">已上架商品</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center fade-in bg-warning bg-opacity-10">
+            <div class="card-body">
+                <div class="fs-1 mb-2">⏳</div>
+                <h4 class="fw-bold text-warning">@stats.PendingReview</h4>
+                <p class="text-muted mb-0">待审核商品</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 待审核商品 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card fade-in">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-hourglass-split"></i> 待审核商品</h5>
+                <a asp-action="PendingReview" class="btn btn-sm btn-primary">查看全部</a>
+            </div>
+            <div class="card-body">
+                @if (!pendingProducts.Any())
+                {
+                    <p class="text-muted text-center mb-0">暂无待审核商品</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>商品</th>
+                                    <th>卖家</th>
+                                    <th>分类</th>
+                                    <th>价格</th>
+                                    <th>发布时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var product in pendingProducts)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                @if (product.Images != null && product.Images.Any())
+                                                {
+                                                    <img src="@product.Images.First().ImagePath" class="me-2" style="width: 50px; height: 50px; object-fit: cover; border-radius: 0.25rem;">
+                                                }
+                                                <div>
+                                                    <strong>@product.Title</strong>
+                                                    <br>
+                                                    <small class="text-muted" style="display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; max-width: 200px;">
+                                                        @product.Description
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>@product.Seller.RealName</td>
+                                        <td>@product.Category.Name</td>
+                                        <td class="text-primary fw-bold">¥@product.Price.ToString("F2")</td>
+                                        <td>@product.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                        <td>
+                                            <a asp-action="ReviewProduct" asp-route-id="@product.Id" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye"></i> 审核
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 快捷操作 -->
+<div class="row g-4 mt-3">
+    <div class="col-md-4">
+        <div class="card fade-in">
+            <div class="card-body text-center">
+                <i class="bi bi-list-check fs-1 text-primary mb-3"></i>
+                <h5 class="card-title">商品审核</h5>
+                <p class="card-text text-muted">审核待发布的商品</p>
+                <a asp-action="PendingReview" class="btn btn-primary">进入审核</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card fade-in">
+            <div class="card-body text-center">
+                <i class="bi bi-clock-history fs-1 text-info mb-3"></i>
+                <h5 class="card-title">审核历史</h5>
+                <p class="card-text text-muted">查看审核历史记录</p>
+                <a asp-action="ReviewHistory" class="btn btn-info">查看历史</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card fade-in">
+            <div class="card-body text-center">
+                <i class="bi bi-people fs-1 text-success mb-3"></i>
+                <h5 class="card-title">用户管理</h5>
+                <p class="card-text text-muted">管理平台用户</p>
+                <a asp-action="Users" class="btn btn-success">用户管理</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card fade-in">
+            <div class="card-body text-center">
+                <i class="bi bi-tags fs-1 text-primary mb-3"></i>
+                <h5 class="card-title">分类管理</h5>
+                <p class="card-text text-muted">管理商品分类</p>
+                <a asp-action="Categories" class="btn btn-primary">分类管理</a>
+            </div>
+        </div>
+    </div>
+</div>
+

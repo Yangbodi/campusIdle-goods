@@ -1,0 +1,148 @@
+@using CampusIdleGoods.Models
+@{
+    ViewData["Title"] = "我的收藏";
+    var favorites = ViewBag.Favorites as List<Favorite> ?? new List<Favorite>();
+    var currentPage = ViewBag.CurrentPage as int? ?? 1;
+    var totalPages = ViewBag.TotalPages as int? ?? 1;
+    var totalCount = ViewBag.TotalCount as int? ?? 0;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold">
+        <i class="bi bi-heart-fill"></i> 我的收藏
+    </h3>
+    <span class="text-muted">共 @totalCount 件商品</span>
+</div>
+
+@if (!favorites.Any())
+{
+    <div class="card text-center py-5">
+        <div class="card-body">
+            <i class="bi bi-heart fs-1 text-muted mb-3"></i>
+            <h5 class="text-muted">暂无收藏</h5>
+            <p class="text-muted">您还没有收藏任何商品</p>
+            <a asp-controller="Product" asp-action="Browse" class="btn btn-primary">去逛逛</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var favorite in favorites)
+        {
+            var product = favorite.Product;
+            <div class="col-md-3">
+                <div class="card product-card fade-in h-100">
+                    <a asp-controller="Product" asp-action="Details" asp-route-id="@product.Id" class="text-decoration-none text-dark">
+                        @if (product.Images != null && product.Images.Any())
+                        {
+                            <img src="@product.Images.First().ImagePath" class="card-img-top" alt="@product.Title" style="height: 200px; object-fit: cover;">
+                        }
+                        else
+                        {
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="bi bi-image fs-1 text-muted"></i>
+                            </div>
+                        }
+                        <div class="card-body">
+                            <h6 class="card-title" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 3em;">
+                                @product.Title
+                            </h6>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-primary fw-bold fs-5">¥@product.Price.ToString("F2")</span>
+                                @if (product.OriginalPrice.HasValue)
+                                {
+                                    <small class="text-muted text-decoration-line-through">¥@product.OriginalPrice.Value.ToString("F2")</small>
+                                }
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="bi bi-eye"></i> @product.ViewCount
+                                </small>
+                                <small class="text-muted">@product.CreatedAt.ToString("MM-dd")</small>
+                            </div>
+                        </div>
+                    </a>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <button type="button" class="btn btn-sm btn-outline-danger w-100 favorite-toggle" data-product-id="@product.Id">
+                            <i class="bi bi-heart-fill"></i> 取消收藏
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- 分页 -->
+    @if (totalPages > 1)
+    {
+        <nav aria-label="分页" class="mt-4">
+            <ul class="pagination justify-content-center">
+                @if (currentPage > 1)
+                {
+                    <li class="page-item">
+                        <a class="page-link" asp-action="Index" asp-route-page="@(currentPage - 1)">上一页</a>
+                    </li>
+                }
+                @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+                {
+                    <li class="page-item @(i == currentPage ? "active" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@i">@i</a>
+                    </li>
+                }
+                @if (currentPage < totalPages)
+                {
+                    <li class="page-item">
+                        <a class="page-link" asp-action="Index" asp-route-page="@(currentPage + 1)">下一页</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+}
+
+@section Scripts {
+    <script>
+        // 取消收藏
+        document.querySelectorAll('.favorite-toggle').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const productId = parseInt(this.dataset.productId);
+                const card = this.closest('.col-md-3');
+                
+                fetch('@Url.Action("Toggle", "Favorite")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: 'productId=' + productId
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && !data.isFavorite) {
+                        // 移除卡片
+                        card.style.transition = 'opacity 0.3s';
+                        card.style.opacity = '0';
+                        setTimeout(() => {
+                            card.remove();
+                            // 如果列表为空，刷新页面
+                            if (document.querySelectorAll('.col-md-3').length === 0) {
+                                location.reload();
+                            }
+                        }, 300);
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('操作失败，请稍后重试');
+                });
+            });
+        });
+    </script>
+}
+
