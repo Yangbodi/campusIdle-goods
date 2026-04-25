@@ -4,6 +4,8 @@
 
 ## 演示视频
 
+https://img.wybody.top/videos/MP4/CampusldleGoods.mp4
+
 <video width="720" controls>
   <source src="https://img.wybody.top/videos/MP4/CampusldleGoods.mp4" type="video/mp4">
   <p>您的浏览器不支持视频播放，请<a href="https://img.wybody.top/videos/MP4/CampusldleGoods.mp4">点此下载视频</a>观看。</p>
